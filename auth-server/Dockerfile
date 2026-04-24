@@ -11,15 +11,13 @@ RUN mvn -B -q dependency:go-offline
 COPY src ./src
 RUN mvn -B -q package -DskipTests
 
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17-jre-alpine
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
-RUN groupadd --system spring && useradd --system --gid spring spring
+RUN addgroup -S spring && adduser -S spring -G spring
 
 COPY --from=build /src/target/auth-server-*.jar app.jar
 
