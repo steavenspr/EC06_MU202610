@@ -96,8 +96,8 @@ class FormationController extends Controller
         }
 
         $viewerKey = $authId !== null
-            ? 'user:' . $authId
-            : 'guest:' . hash('sha256', ($request->ip() ?? 'unknown') . '|' . ($request->userAgent() ?? 'unknown'));
+            ? 'user:'.$authId
+            : 'guest:'.hash('sha256', ($request->ip() ?? 'unknown').'|'.($request->userAgent() ?? 'unknown'));
 
         $cacheKey = sprintf('formation:%d:view:%s', $formation->id, $viewerKey);
 
@@ -114,8 +114,8 @@ class FormationController extends Controller
         $validated = $request->validate([
             'titre' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'categorie' => ['required', 'in:' . implode(',', self::CATEGORIES)],
-            'niveau' => ['required', 'in:' . implode(',', self::NIVEAUX)],
+            'categorie' => ['required', 'in:'.implode(',', self::CATEGORIES)],
+            'niveau' => ['required', 'in:'.implode(',', self::NIVEAUX)],
         ]);
 
         $formation = Formation::create([
@@ -149,8 +149,8 @@ class FormationController extends Controller
         $validated = $request->validate([
             'titre' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'categorie' => ['required', 'in:' . implode(',', self::CATEGORIES)],
-            'niveau' => ['required', 'in:' . implode(',', self::NIVEAUX)],
+            'categorie' => ['required', 'in:'.implode(',', self::CATEGORIES)],
+            'niveau' => ['required', 'in:'.implode(',', self::NIVEAUX)],
         ]);
 
         $formation->update($validated);

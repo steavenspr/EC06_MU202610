@@ -28,6 +28,7 @@ class Formation extends Model
     ];
 
     public const CREATED_AT = 'date_creation';
+
     public const UPDATED_AT = null;
 
     /**

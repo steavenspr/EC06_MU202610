@@ -22,6 +22,7 @@ class Enrollment extends Model
     ];
 
     public const CREATED_AT = 'date_inscription';
+
     public const UPDATED_AT = null;
 
     /**

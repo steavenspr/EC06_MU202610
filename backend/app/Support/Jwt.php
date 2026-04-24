@@ -43,7 +43,7 @@ class Jwt
      * Encode un JWT HS256 avec les claims standard (sub, email, role, iss,
      * iat, exp). Utilise en test pour simuler l'emission cote auth-server.
      *
-     * @param  array<string, mixed>  $extra claims additionnels
+     * @param  array<string, mixed>  $extra  claims additionnels
      */
     public static function encode(int $userId, string $email, string $role, int $ttlMinutes = 15, array $extra = []): string
     {

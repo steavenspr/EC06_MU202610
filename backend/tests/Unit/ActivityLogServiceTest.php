@@ -64,7 +64,7 @@ class ActivityLogServiceTest extends TestCase
             ->with('mongodb')
             ->andReturn($connection);
 
-        (new ActivityLogService())->log('user.registered', ['user_id' => 42]);
+        (new ActivityLogService)->log('user.registered', ['user_id' => 42]);
 
         // Mockery verifie les expectations a tearDown(). On le signale
         // explicitement a PHPUnit sinon il marque le test "risky"
@@ -94,7 +94,7 @@ class ActivityLogServiceTest extends TestCase
             ->with('Mongo activity log failed', Mockery::on(fn ($ctx) => $ctx['event'] === 'user.registered'));
 
         // Cet appel ne doit PAS lever d'exception, meme si Mongo plante.
-        (new ActivityLogService())->log('user.registered', ['user_id' => 1]);
+        (new ActivityLogService)->log('user.registered', ['user_id' => 1]);
 
         // Si on arrive ici, c'est que l'exception a bien ete capturee.
         $this->assertTrue(true);

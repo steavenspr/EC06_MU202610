@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\JwtAuth;
 use App\Support\Jwt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Tests du profil API basé sur le JWT validé par {@see \App\Http\Middleware\JwtAuth}.
+ * Tests du profil API basé sur le JWT validé par {@see JwtAuth}.
  *
  * L'inscription et le login sont gérés par auth-server ; Laravel n'expose plus
  * /api/register ni /api/login.
