@@ -1,0 +1,2 @@
+# Outils hors stack app (extraction PDF pour docs cours)
+pypdf>=5.0.0

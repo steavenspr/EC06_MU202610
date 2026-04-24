@@ -1,0 +1,116 @@
+PAGES: 21
+
+===== PAGE 1 =====
+Projet Final: Moustass CloudSecL’application Missié Moustass a d’abord été développée comme une application utilisée exclusivement en interne par les employés de Barbichetz Ltd, une entreprise opérant dans le secteur financier.Aujourd’hui, face à une croissance attendue du nombre d’utilisateurs, notamment répartis à l’échelle internationale, Barbichetz Ltd souhaite migrer cette application vers le Cloud afin de la rendre accessible, maintenable et extensible. 
+
+
+===== PAGE 2 =====
+Contexte professionnel L’évolution des besoins de l’entreprise impliquent un changement d’architecture:•L’application devra désormais reposer sur une architecture cloud moderne, scalable et résiliente, capable de supporter un grand nombre d’utilisateurs simultanés.•Elle devra être dockerisée pour faciliter son déploiement sur différents environnements.•Chaque composant (frontend, backend, base de données) pourra être isolé, sécurisé et mis à l’échelle individuellement, conformément aux bonnes pratiques DevOps.
+Ce projet représente donc une refonte complète:• Avec une attention particulière portée à la sécurité des échanges, •A la portabilité de l’environnement, et à la qualité du code, •Tout en assurant une expérience utilisateur fluide et sécurisée.
+D. Samfat Projet Moustass CloudSec2
+Le chef de projet vous communique ses notes synthétiques et vous êtes invités à poser des questions pour clarifier les besoins client
+
+===== PAGE 3 =====
+Ce n’est pas le client qui se trompe, c’est le développeur qui n’a pas posé la bonne question
+D. Samfat Projet Moustass CloudSec3
+Attention au Cahier des Charges !!!Avant de développer, il faut comprendre:•Toujours poser des questions au client pour clarifier les besoins.•Valider chaque exigence avant de commencer à coder.Cultiver un esprit critique :•Remettre en question les zones floues.•Ne jamais supposer une fonctionnalité qui n’est pas écrite.•Documenter les échanges et les décisions prises.
+
+===== PAGE 4 =====
+Présentation du projetProjet : Mousatass Cloud Sécurisé•Concevoir une application en microservices •Durée : 35 heures•Travail : en binôme obligatoireLes exigences:•Authentification Forte avec Masterkey•Gestion de données sensibles•Architecture Zero Trust•CI/CD complet•Déploiement DockerBackend :•Auth Service → Spring Boot•Audio Service → Laravel•Billing Service → Laravel•Base de données : MySQL
+Frontend : •ReactSécurité :•JWT•Master Key•AES-256•SHA-256DevOps :•Git, test coverage•SonarCloud•GitHub Actions•Docker
+D. Samfat Projet Moustass CloudSec4
+
+===== PAGE 5 =====
+Partie I: Architecture Cloud Zero TrustObjectifs:•Zero Trust = ne jamais faire confiance, toujours vérifier•Authentification systématique•Autorisation stricte•Aucune confiance implicite réseau•Chaque requête doit être vérifiée
+
+===== PAGE 6 =====
+Application du Zero Trust au projetChaque microservice est isolé•Chaque appel API est authentifié (JWT)•Aucune communication directe sans vérification•Secrets sécurisés (Master Key, JWT secret)Choix du Cloud•AWS (Amazon)•Azure•GCPComparer :•Coût•Facilité de déploiement•Services disponibles
+Objectif : 1000 utilisateursÀ estimer :•Serveur API•Base de données•Stockage audio•Trafic réseauLivrable attendu :•Tableau de coût estimatif mensuel et annuel•Choix final
+D. Samfat Projet Moustass CloudSec6
+
+===== PAGE 7 =====
+Partie II:  Modélisation en MicroservicesObjectifs: Déployer 3 microservices indépendants•Authentication Service (Spring Boot)•Audio Service (Laravel)•Billing Service (Laravel)
+
+===== PAGE 8 =====
+Modéliser l’architecture globaleFlux global•React ↓•Auth Service → JWT ↓•Billing Service ↓•Audio ServiceDiagramme C4 à produire :•Contexte (niveau 1)•Conteneurs (niveau 2)
+Les diagrammes C4 doivent montrer :•Frontend•Microservices•Base de données•Flux
+D. Samfat Projet Moustass CloudSec8
+Bonnes Pratiques Microservices:•Un service = une responsabilité•Communication via API REST•Isolation des données•Pas de logique métier partagée
+
+===== PAGE 9 =====
+Un service = uneresponsabilité•Chaque microservice doit avoir un rôle unique et bien défini.•Un service ne doit jamais faire plusieurs choses différentes.
+Application dans Mousatass: Auth Service (Spring Boot) gère uniquement :•authentification•mot de passe•JWT•Master Key•clés utilisateurs
+Audio Service (Laravel) gère uniquement :•enregistrements vocaux•CRUD•chiffrement AES•hash SHA-256
+Billing Service (Laravel) gère uniquement :•factures•statut de paiement•documents•Mauvaise pratique•Un service qui gère à la fois login + audio + facturation
+Bonne pratique•Chaque service a une mission claire
+D. Samfat Projet Moustass CloudSec9
+
+===== PAGE 10 =====
+Communication via API REST•Les microservices communiquent via HTTP avec des API REST. •Ils ne partagent pas leur code interne.
+Application dans Mousatass react appelle :•Auth Service → login, register•Audio Service → CRUD audio•Billing Service → factures
+Chaque requête contient :•Authorization: Bearer JWT
+Exemple :•POST /api/auth/login•GET /api/audio•GET /api/invoices•Avantages:•Indépendance des services•Facilité de test (Postman, Swagger)•Compatibilité avec web et mobile
+D. Samfat Projet Moustass CloudSec10
+
+===== PAGE 11 =====
+Isolation des données•Chaque microservice doit gérer ses propres données.•Il ne doit pas modifier directement les données d’un autre service.Application dans Mousatass•Auth Service•Table users•password•keys•email_verified
+Audio Service•Table audio_records•hash•encrypted_data
+Billing Service•Table invoices•amount•status•Mauvaise pratique•Audio Service modifie la table users
+Bonne pratique•Audio Service utilise seulement user_id•Auth Service reste responsable des utilisateurs
+D. Samfat Projet Moustass CloudSec11
+
+===== PAGE 12 =====
+Pas de logique métier partagée•Chaque règle métier doit être implémentée dans un seul service.•On ne duplique pas la logique.
+Application dans Mousatass•Auth Service•Validation mot de passe•JWT•authentification
+Audio Service•Chiffrement AES•Hash SHA-256•gestion fichiers audio
+Billing Service•Calcul facture•statut paiement
+Mauvaise pratique•JWT généré dans plusieurs services•Validation mot de passe dans Laravel
+Bonne pratique•Chaque service gère sa logique métier
+D. Samfat Projet Moustass CloudSec12
+
+===== PAGE 13 =====
+Partie III:  ImplémentationObjectifs•Reprendre un code qui a fait ses preuves•L’adapter au nouveau projet•Ajouter de nouvelles fonctionnalités
+
+===== PAGE 14 =====
+Sécurité attendueAuthentification forte•Admin Master Key (voir TP5)•JWT•Sécurité renforcéeAjouts :•Confirmation email obligatoire•Gestion des clés utilisateur•Fichier de log des transactions•Gestion de la facture à être payée
+Validation email •Lors de l’inscription•Envoi d’un email•Lien de validation•Compte activé uniquement après validation
+D. Samfat Projet Moustass CloudSec14
+
+===== PAGE 15 =====
+CryptographieGestion des clés cryptographiques•Utilisation de l’algorithme RSA•Chaque utilisateur possède une paire de clés•Clé publique•Clé privée / secrèteUtilisation :•Sécuriser les échanges entre utilisateurs•Hacher les messages avec SHA256
+Chiffrement des messages vocaux•Alice envoie un message à Bob•Alice chiffre avec la clé publique de Bob•Bob déchiffre avec sa clé privée
+Objectif :•Confidentialité des messages•Intégrité des messages
+D. Samfat Projet Moustass CloudSec15
+Point important:•On chiffre avec la clépubliquedu destinataire, •Pas la cléprivée.
+
+===== PAGE 16 =====
+Partie IV:  DevOps et CI/CDObjectifs•Qualité logicielle•Industrialiser le développement et le déploiement de l’application
+
+===== PAGE 17 =====
+Collaboration et Qualité du développementGit et organisation•Travail en binôme •Chaque étudiant possède son repo•Même version sur les deux comptes
+Branches recommandées :•main•dev•feature
+SonarCloud analyse obligatoire :•1 pour Front•1 pour Back
+Objectif :•Détecter bugs•Failles de sécurité•Code smells
+D. Samfat Projet Moustass CloudSec17
+
+===== PAGE 18 =====
+Déploiement en microservice
+GitHub Actions•Pipeline CI/CD•Build•Tests•SonarCloud•Build Docker
+Pipeline doit échouersierreur
+Docker Conteneuriser:•Spring Boot•Laravel•MySQLCommandefinale :> docker compose up
+D. Samfat Projet Moustass CloudSec18
+
+===== PAGE 19 =====
+Partie V:  LivrablesObjectifs•Apps qui marche sans bugs•Livrables DevOps•Rapport Powerpoint & présentation
+
+===== PAGE 20 =====
+Livrables
+Livrables techniques•API Spring Boot fonctionnelle•API Laravel fonctionnelle•Frontend React•Docker fonctionnel•Microservices qui marchent sans bug
+Documentation•Swagger / OpenAPI obligatoire
+README doit contenir :•Architecture•Instructions de lancement•Choix techniques
+D. Samfat Projet Moustass CloudSec20
+
+===== PAGE 21 =====
+Rapport final & DemoLivrables DevOps•Git propre•Versioning•Pipeline CI/CD•SonarCloud vert
+Présentation:•Architecture•Sécurité•Fonctionnalités•CI/CD•Docker
+D. Samfat Projet Moustass CloudSec21
