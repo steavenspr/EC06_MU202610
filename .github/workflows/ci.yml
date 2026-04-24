@@ -90,9 +90,9 @@ jobs:
         working-directory: ./auth-server
         run: mvn -B dependency:copy-dependencies -DoutputDirectory=target/sonar-libs
 
-      # 11. SonarCloud (token dans les secrets — jamais en clair)
+      # 11. SonarCloud — analyse CI uniquement (désactiver l’Automatic Analysis sur sonarcloud.io)
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
