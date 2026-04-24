@@ -125,4 +125,59 @@ class EnrollmentTest extends TestCase
 
         $response->assertStatus(200)->assertJsonCount(0, 'formations');
     }
+
+    public function test_apprenant_cannot_enroll_when_five_active_formations(): void
+    {
+        $apprenantId = 7401;
+        $formations = Formation::factory()->count(6)->create();
+
+        foreach ($formations->take(5) as $formation) {
+            Enrollment::factory()->create([
+                'utilisateur_id' => $apprenantId,
+                'formation_id' => $formation->id,
+            ]);
+        }
+
+        $sixthFormation = $formations->last();
+        $token = $this->jwtBearer($apprenantId, 'limit5@example.com', 'apprenant');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/formations/{$sixthFormation->id}/inscription");
+
+        $response->assertStatus(400)
+            ->assertJsonPath(
+                'message',
+                'Limite atteinte : un apprenant ne peut pas être inscrit à plus de 5 formations en même temps.'
+            );
+
+        $this->assertDatabaseMissing('enrollments', [
+            'utilisateur_id' => $apprenantId,
+            'formation_id' => $sixthFormation->id,
+        ]);
+    }
+
+    public function test_apprenant_can_enroll_fifth_formation_when_four_active(): void
+    {
+        $apprenantId = 7402;
+        $formations = Formation::factory()->count(5)->create();
+
+        foreach ($formations->take(4) as $formation) {
+            Enrollment::factory()->create([
+                'utilisateur_id' => $apprenantId,
+                'formation_id' => $formation->id,
+            ]);
+        }
+
+        $fifthFormation = $formations[4];
+        $token = $this->jwtBearer($apprenantId, 'fifthok@example.com', 'apprenant');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/formations/{$fifthFormation->id}/inscription");
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('enrollments', [
+            'utilisateur_id' => $apprenantId,
+            'formation_id' => $fifthFormation->id,
+        ]);
+    }
 }
