@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
  */
 class EnrollmentController extends Controller
 {
+    private const MAX_ACTIVE_ENROLLMENTS_PER_LEARNER = 5;
+
     /**
      * Inscrit l'apprenant connecté à une formation.
      */
@@ -30,6 +32,19 @@ class EnrollmentController extends Controller
             return response()->json([
                 'message' => 'Vous suivez déjà cette formation.',
             ], 409);
+        }
+
+        $activeCount = Enrollment::query()
+            ->where('utilisateur_id', $userId)
+            ->count();
+
+        if ($activeCount >= self::MAX_ACTIVE_ENROLLMENTS_PER_LEARNER) {
+            return response()->json([
+                'message' => sprintf(
+                    'Limite atteinte : un apprenant ne peut pas être inscrit à plus de %d formations en même temps.',
+                    self::MAX_ACTIVE_ENROLLMENTS_PER_LEARNER
+                ),
+            ], 400);
         }
 
         $enrollment = Enrollment::create([
