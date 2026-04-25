@@ -1,402 +1,200 @@
-# SkillHub - Plateforme e-learning collaborative
+# SkillHub (EC06)
 
-SkillHub met en relation des **formateurs** et des **apprenants** autour de formations en ligne.
+Plateforme **e-learning** mettant en relation **formateurs** et **apprenants** : catalogue de formations, modules, inscriptions, tableaux de bord et journalisation d’activité.
 
-Ce document est un guide d'onboarding detaille pour les coequipiers du projet (frontend, backend, devops).
-
-## Sommaire
-
-- [1. Contexte et objectifs](#1-contexte-et-objectifs)
-- [2. Vision produit](#2-vision-produit)
-- [3. Architecture globale](#3-architecture-globale)
-- [4. Stack technique](#4-stack-technique)
-- [5. Structure du repository](#5-structure-du-repository)
-- [6. Roles et responsabilites](#6-roles-et-responsabilites)
-- [7. Prerequis local](#7-prerequis-local)
-- [8. Installation complete (pas a pas)](#8-installation-complete-pas-a-pas)
-- [9. Lancement en local](#9-lancement-en-local)
-- [10. Verification fonctionnelle rapide](#10-verification-fonctionnelle-rapide)
-- [11. Workflow equipe (Git)](#11-workflow-equipe-git)
-- [12. Qualite, tests et definition of done](#12-qualite-tests-et-definition-of-done)
-- [13. Livrables Bloc 03 (rappel)](#13-livrables-bloc-03-rappel)
-- [14. Depannage avance](#14-depannage-avance)
-- [15. Documentation detaillee](#15-documentation-detaillee)
-
-## 1. Contexte et objectifs
-
-Le projet SkillHub est construit en plusieurs phases. La phase actuelle vise:
-
-- une application fonctionnelle frontend + backend,
-- une securisation de l'authentification via JWT,
-- une industrialisation progressive (Docker, CI/CD, architecture cloud),
-- une documentation claire pour un travail equipe efficace.
-
-Ce README sert de base commune pour reduire les blocages onboarding et harmoniser les pratiques.
-
-## 2. Vision produit
-
-SkillHub doit permettre:
-
-- aux formateurs de publier et gerer leurs contenus,
-- aux apprenants de decouvrir, suivre et progresser,
-- a l'equipe technique de maintenir la plateforme de facon fiable et evolutive.
-
-Fonctions coeur:
-
-- catalogue de formations,
-- details d'une formation + modules,
-- gestion des modules par le formateur (ajout, modification, suppression, ordre),
-- inscription/desinscription apprenant,
-- dashboard formateur,
-- dashboard apprenant,
-- validation client renforcee sur les formulaires critiques (auth, inscription, formations, modules),
-- compteur de vues backend avec exclusion du proprietaire + cooldown anti-refresh,
-- journalisation d'activites (MongoDB) pour audit technique.
-
-Regles d'inscription actuelles:
-
-- `prenom`, `nom` et `telephone` (champ `contact`) sont obligatoires pour les nouveaux comptes.
-- L'email reste l'identifiant principal de connexion et de contact.
-- Les comptes deja existants restent compatibles (colonnes ajoutees en base sans forcer de mise a jour immediate).
-
-## 3. Architecture globale
-
-```text
-Frontend React (Vite)  <----HTTP/JSON---->  Backend Laravel API  <---->  MySQL
-       |                                            |
-       |                                            +---- JWT Auth + controle des roles
-       |
-       +--------------------------------------------+---- MongoDB (activity logs)
-```
-
-### Flux principal
-
-1. L'utilisateur interagit avec le frontend React.
-2. Le frontend appelle l'API Laravel (`/api/*`).
-3. Laravel verifie JWT + role (`formateur` ou `apprenant`).
-4. Les donnees metier sont lues/ecrites dans MySQL.
-5. Les evenements metier importants sont logges dans MongoDB (`activity_logs`).
-
-Regles metier recentes:
-
-- Les formulaires frontend appliquent des regles de validation locales (format, longueur, caracteres autorises) avant l'appel API.
-- Sur `GET /api/formations/{formation}`, le backend n'incremente pas les vues pour le formateur proprietaire et applique un cooldown de 15 minutes par visiteur.
-
-## 4. Stack technique
-
-| Cote | Technologie |
-|---|---|
-| Frontend | React 19, Vite, React Router, React Bootstrap |
-| Backend | Laravel 13, PHP 8.3 |
-| Auth | JWT (`php-open-source-saver/jwt-auth`) |
-| DB principale | MySQL |
-| DB logs | MongoDB |
-| Tests backend | PHPUnit |
-
-## 5. Structure du repository
-
-```text
-skillhub_group/
-├── frontend/                  # Application React
-│   ├── src/components/        # UI partages
-│   ├── src/pages/             # Pages principales
-│   ├── src/services/          # Client API + services metier
-│   └── README.md              # Guide frontend detaille
-├── backend/                   # API Laravel
-│   ├── app/Http/Controllers/Api/
-│   ├── app/Services/
-│   ├── routes/api.php
-│   ├── docs/openapi.yaml
-│   └── README.md              # Guide backend detaille
-└── README.md                  # Guide global (ce fichier)
-```
-
-## 6. Roles et responsabilites
-
-Cette section distingue:
-
-- les roles applicatifs (dans le produit),
-- les roles equipe Bloc 03 (dans l'organisation projet).
-
-### 6.1 Roles applicatifs
-
-| Role | Ce que le role peut faire | Pages / endpoints cle |
-|---|---|---|
-| `formateur` | Creer, modifier, supprimer ses formations; gerer les modules de chaque formation (ajout, edition, suppression, ordre); suivre son dashboard | `/dashboard/formateur`, `POST/PUT/DELETE /api/formations/*`, `POST /api/formations/{formation}/modules`, `PUT/DELETE /api/modules/{module}` |
-| `apprenant` | Parcourir catalogue, s'inscrire/desinscrire, suivre sa progression | `/formations`, `/dashboard/apprenant`, `POST/DELETE /api/formations/{id}/inscription`, `GET /api/apprenant/formations` |
-
-### 6.2 Roles equipe Bloc 03
-
-| Role | Mission principale | Livrables pilotes |
-|---|---|---|
-| Cloud Architect | Definir l'architecture cloud cible, comparer les options, produire la recommandation | Rapport d'audit, C4 (C1/C2), budget N1/N2 |
-| DevOps Engineer | Industrialiser l'execution et le deploiement | Dockerfiles, `docker-compose.yml`, pipeline CI/CD |
-| Tech Lead | Coherence technique, qualite de livraison, gouvernance Git | `CONTRIBUTING.md`, strategy branches/PR, controle qualite |
-
-### 6.3 Regles de collaboration attendues
-
-- Branches: `main`, `develop`, `feature/*`, `fix/*`.
-- Pas de commit direct sur `main`.
-- PR obligatoires avec description claire + verification locale.
-- Conventional Commits (`feat:`, `fix:`, `docs:`, `ci:`, `docker:`, `chore:`).
-- Historique Git doit montrer une contribution reguliere des 3 membres.
-
-## 7. Prerequis local
-
-### Outils obligatoires
-
-- Node.js 18+
-- npm 9+
-- PHP 8.3+
-- Composer 2+
-- MySQL 8+ (ou MariaDB)
-- MongoDB Community Server
-
-### Outils recommandes
-
-- MongoDB Compass (visualisation)
-- mongosh (diagnostic)
-- GitHub Desktop ou CLI Git
-
-### Notes importantes
-
-- Verifier que MySQL et MongoDB tournent avant de lancer l'API.
-- Sur Windows, lancer `mongod` en service est le plus stable.
-
-## 8. Installation complete (pas a pas)
-
-## 8.1 Cloner et se placer a la racine
-
-```bash
-git clone <url-du-repo>
-cd skillhub_group
-```
-
-### 8.2 Backend
-
-```bash
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan jwt:secret
-```
-
-Configurer `backend/.env`:
-
-```dotenv
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=skillhub
-DB_USERNAME=root
-DB_PASSWORD=
-
-MONGODB_URI=mongodb://127.0.0.1:27017
-MONGODB_HOST=127.0.0.1
-MONGODB_PORT=27017
-MONGODB_DATABASE=skillhub_logs
-MONGODB_USERNAME=
-MONGODB_PASSWORD=
-MONGODB_AUTH_DATABASE=admin
-
-AUTH_GUARD=api
-```
-
-Puis migrer:
-
-```bash
-php artisan migrate
-```
-
-### 8.3 Frontend
-
-```bash
-cd ../frontend
-npm install
-```
-
-Configurer `frontend/.env`:
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-## 9. Lancement en local
-
-### Terminal 1 - Backend
-
-```bash
-cd backend
-php artisan optimize:clear
-php artisan serve --host=127.0.0.1 --port=8000
-```
-
-### Terminal 2 - Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-URLs:
-
-- Frontend: `http://localhost:5173`
-- Backend API: `http://127.0.0.1:8000`
-
-## 10. Verification fonctionnelle rapide
-
-Checklist de smoke test:
-
-1. Ouvrir `http://localhost:5173`.
-2. Creer un compte `formateur` avec `prenom`, `nom`, `telephone`, `email`, `mot de passe`.
-3. Creer une formation depuis le dashboard formateur.
-4. Ouvrir le bouton `Modules` de cette formation et ajouter un module.
-5. Modifier un module, puis verifier l'ordre et le contenu affiches sur `/formation/:id`.
-6. Supprimer un module (en respectant la regle backend de minimum 3 modules).
-7. Se deconnecter, creer un compte `apprenant` avec les memes champs obligatoires.
-8. S'inscrire a la formation.
-9. Verifier le dashboard apprenant.
-10. Verifier que `GET /api/formations` repond 200.
-
-Option verification logs MongoDB:
-
-```bash
-mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.countDocuments()"
-```
-
-## 11. Workflow equipe (Git)
-
-Workflow recommande:
-
-1. Partir de `develop` a jour.
-2. Creer une branche `feature/nom-court`.
-3. Commits petits et atomiques.
-4. Push + Pull Request vers `develop`.
-5. Review + corrections.
-6. Merge quand la PR est validee.
-
-Template message de commit:
-
-```text
-feat(frontend): ajouter filtre categorie dans le catalogue
-fix(api): corriger verification du role formateur
-docs(readme): clarifier setup mongodb windows
-```
-
-## 12. Qualite, tests et definition of done
-
-### 12.1 Verification minimale avant PR
-
-Backend:
-
-```bash
-cd backend
-composer run test
-php artisan optimize:clear
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm run build
-```
-
-### 12.2 Definition of done (DoD)
-
-Une tache est consideree terminee si:
-
-- le code compile/execute localement,
-- les cas principaux sont verifies,
-- la doc impactee est mise a jour,
-- la PR est lisible et reviewable,
-- aucun secret n'est committe.
-
-### 12.3 Rappels qualite frontend/backend
-
-- Frontend: les erreurs de saisie doivent etre captees cote client avant soumission API (auth, creation/edition formations, modules).
-- Backend: les regles metier sensibles restent verifiees cote serveur (roles, proprietaire de formation, logique de vues).
-
-## 13. Livrables Bloc 03 (rappel)
-
-Pour rester aligne avec le CDC:
-
-- rapport cloud (analyse, comparaison, recommandation, budget),
-- diagrammes C4 (C1 et C2 obligatoires),
-- conteneurisation complete (`Dockerfile`, `docker-compose.yml`),
-- CI/CD (lint, tests, build, push image tag SHA),
-- `CONTRIBUTING.md` et workflow Git propre.
-
-## 14. Depannage avance
-
-### 14.1 Frontend: `Failed to fetch`
-
-- Verifier `VITE_API_BASE_URL`.
-- Verifier que l'API tourne sur `127.0.0.1:8000`.
-- Verifier CORS backend.
-
-```bash
-cd backend
-php artisan optimize:clear
-```
-
-### 14.2 API: erreurs 500 sur `/api/login` ou `/api/formations`
-
-Ca arrive souvent si la DB configuree n'est pas disponible.
-
-- Verifier `DB_CONNECTION` et credentials dans `backend/.env`.
-- Verifier que MySQL est demarre.
-- Verifier migrations.
-
-```bash
-cd backend
-php artisan migrate:status
-```
-
-### 14.3 MongoDB: collection vide dans Compass
-
-- Verifier service MongoDB actif.
-- Verifier `MONGODB_DATABASE=skillhub_logs`.
-- Vider cache Laravel + redemarrer serveur.
-- Declencher un event (`/api/register`), puis refresh Compass.
-
-```bash
-cd backend
-php artisan optimize:clear
-```
-
-### 14.4 JWT: 401 Unauthorized
-
-- Token absent/expire.
-- `JWT_SECRET` manquant.
-- Header `Authorization: Bearer <token>` absent.
-
-Regenerer le secret si necessaire:
-
-```bash
-cd backend
-php artisan jwt:secret
-```
-
-### 14.5 Composer: extension `ext-sodium` manquante
-
-Si `composer install` signale `ext-sodium` manquante:
-
-- activer l'extension sodium dans `php.ini`,
-- puis relancer `composer install`.
-
-## 15. Documentation detaillee
-
-- Guide backend: `backend/README.md`
-- Guide frontend: `frontend/README.md`
-- OpenAPI: `backend/docs/openapi.yaml`
-- CDC Bloc 03: `CDC_Bloc03_SkillHub.pdf`
+Ce dépôt regroupe l’**API métier Laravel**, le **micro-service d’authentification Spring Boot**, la **conteneurisation Docker** et le **pipeline CI/CD** (GitHub Actions + SonarCloud).
 
 ---
 
-Si vous rejoignez le projet: commencez par ce README, puis passez a votre scope (`frontend` ou `backend`) pour les details techniques.
+## Sommaire
+
+1. [Description et architecture microservices](#1-description-et-architecture-microservices)  
+2. [Authentification centralisée et JWT](#2-authentification-centralisée-et-jwt)  
+3. [Règle métier — limite d’inscriptions (Q1)](#3-règle-métier--limite-dinscriptions-q1)  
+4. [Installation et lancement avec Docker](#4-installation-et-lancement-avec-docker)  
+5. [Outils : SonarCloud, GitHub Actions, Docker](#5-outils--sonarcloud-github-actions-docker)  
+6. [Variables d’environnement](#6-variables-denvironnement)  
+7. [Qualité logicielle — analyse et plan d’action](#7-qualité-logicielle--analyse-et-plan-daction)  
+8. [Structure du dépôt](#8-structure-du-dépôt)  
+
+---
+
+## 1. Description et architecture microservices
+
+SkillHub est découpé en **services** qui communiquent principalement en **HTTP/JSON** sur un réseau Docker dédié. La persistance métier (formations, inscriptions, modules) vit dans **MySQL** ; les **logs d’activité** sont stockés dans **MongoDB**. Les **consommateurs** des API (outils, scripts, intégrations) appellent Laravel pour le métier et l’auth-server pour l’obtention des jetons.
+
+### Schéma logique
+
+```mermaid
+flowchart LR
+  subgraph clients["Consommateurs API"]
+    C["Clients HTTP\n(JSON)"]
+  end
+
+  subgraph skillhub["Stack SkillHub (Docker)"]
+    API["API Laravel\n:8000"]
+    AUTH["Auth-server Spring Boot\n:8080"]
+    MY["MySQL"]
+    MG["MongoDB"]
+  end
+
+  C -->|"REST /api/* + Bearer JWT"| API
+  C -->|"Register / Login HMAC + JWT"| AUTH
+  API --> MY
+  API --> MG
+  AUTH --> MY
+```
+
+| Composant | Rôle |
+|-----------|------|
+| **Laravel (`api`)** | Règles métier, formations, modules, inscriptions, validation JWT. |
+| **Auth-server (`auth-server`)** | Comptes utilisateurs (MySQL dédié `auth_db`), inscription, login **sans envoi du mot de passe en clair** (preuve HMAC), émission des **JWT**. |
+| **MySQL** | Données applicatives SkillHub + base `auth_db` pour Spring. |
+| **MongoDB** | Collection de logs / audit (`activity_logs`). |
+
+---
+
+## 2. Authentification centralisée et JWT
+
+Imagine que **toutes les cartes d’identité** du système sont délivrées au même guichet : c’est le rôle du **micro-service Spring Boot** (souvent joignable en local sur le port **8080**). Là s’inscrivent les comptes, là on prouve qu’on connaît son mot de passe **sans l’envoyer en clair sur le fil**, et là l’on repart avec un **jeton JWT** — une sorte de badge signé qu’on présentera ensuite à l’API métier. Ce n’est pas un SSO d’entreprise au sens SAML, mais **un seul endroit** pour l’identité et les jetons, ce qui simplifie la vie de Laravel : **il ne garde pas le mot de passe** des utilisateurs pour ce flux-là, il se contente de **lire et de faire confiance au JWT** s’il est valide.
+
+**Premier geste : créer un compte.** On envoie une requête `POST` vers `http://localhost:8080/api/auth/register` (en conditions Docker, l’hôte reste le même principe : le service d’auth écoute sur **8080**). Le corps est classique — par exemple en formulaire `x-www-form-urlencoded` avec l’**e-mail**, le **mot de passe** et le **rôle** (`apprenant` ou `formateur`). Spring vérifie la politique de mot de passe, enregistre l’utilisateur dans **sa** base (`auth_db`) et répond que l’inscription a bien eu lieu. Rien de magique : c’est le **tiroir des identités**, séparé du catalogue de formations qui vit côté Laravel.
+
+**Ensuite : se connecter sans exposer le mot de passe.** Le client prépare un **nonce** (une valeur à usage limité), note l’**heure**, et assemble un petit message du type `email:nonce:timestamp`. Il calcule une **empreinte HMAC** (SHA-256) de ce message en utilisant le mot de passe comme secret — un peu comme dire « je connais le code, mais je ne le dicte pas à voix haute, je montre seulement une preuve cohérente avec ce code ». Cette empreinte part dans un `POST` vers `http://localhost:8080/api/auth/login` avec l’e-mail, le nonce et l’horodatage. Si la preuve est bonne, Spring répond en **200** avec un **`accessToken`** (le JWT), une date d’expiration et le type **`Bearer`**. À partir de là, le mot de passe peut rester sur la machine du client : **le réseau ne transporte que la preuve**, pas le secret.
+
+**Enfin : utiliser l’API Laravel avec le même badge.** Le JWT a été signé côté Spring avec un secret partagé ; Laravel possède **exactement le même** `JWT_SECRET` et le même **`JWT_ISSUER`**, ce qui lui permet de **vérifier la signature et l’expiration** tout seul, dans le middleware `jwt.auth` (voir `App\Support\Jwt`). Concrètement, pour une route comme `GET http://localhost:8000/api/profile`, on ajoute l’en-tête `Authorization: Bearer <accessToken>`. Laravel décode le jeton, retrouve l’identifiant, l’e-mail et le rôle, et renvoie par exemple un objet `user` — **sans rappeler Spring à chaque requête**. C’est ce qui rend le flux **stateless** et léger : une fois le badge émis, le guichet d’identité peut se reposer ; c’est Laravel qui contrôle les accès au métier, toujours avec le même jeton.
+
+---
+
+## 3. Règle métier — limite d’inscriptions (Q1)
+
+**Règle** : un **apprenant** ne peut pas être inscrit à **plus de cinq formations actives en parallèle**. Une formation est comptée tant qu’une ligne d’inscription existe pour cet utilisateur (les désinscriptions libèrent un « slot »).
+
+**Implémentation** : `App\Http\Controllers\Api\EnrollmentController::store`.
+
+- Avant création d’une inscription, le contrôleur compte les inscriptions existantes pour l’utilisateur authentifié.  
+- Si le nombre est **≥ 5**, la réponse est **`400 Bad Request`** avec un message explicite du type : limite de cinq formations simultanées.  
+- Les tests PHPUnit associés se trouvent dans `backend/tests/Feature/EnrollmentTest.php`.
+
+**Endpoint modifié / concerné** (inscription apprenant) :
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `POST` | `/api/formations/{formation}/inscription` | Inscription de l’apprenant connecté ; applique la limite de 5 formations. |
+
+*(Routes déclarées dans `backend/routes/api.php`, groupe middleware `jwt.auth` + rôle apprenant.)*
+
+---
+
+## 4. Installation et lancement avec Docker
+
+### Prérequis
+
+- [Docker](https://docs.docker.com/get-docker/) et [Docker Compose](https://docs.docker.com/compose/) récents.
+
+### Étapes
+
+1. Cloner le dépôt et se placer à la **racine** (là où se trouvent `docker-compose.yml` et `.env.example`).  
+2. Copier les variables d’environnement :  
+   `cp .env.example .env`  
+3. Renseigner les secrets dans **`.env`** (au minimum `APP_KEY` Laravel, `JWT_SECRET`, `APP_MASTER_KEY`, mots de passe MySQL/MongoDB — voir section suivante).  
+4. Lancer la stack :  
+
+```bash
+docker compose up --build
+```
+
+5. Accès habituels (ports par défaut du compose) :  
+   - API Laravel : **http://localhost:8000**  
+   - Auth-server : **http://localhost:8080**  
+
+Les services `api` et `auth-server` attendent que **MySQL** (et Mongo pour l’API) soient **healthy** ; le premier démarrage peut prendre une ou deux minutes.
+
+---
+
+## 5. Outils : SonarCloud, GitHub Actions, Docker
+
+### SonarCloud — analyse de qualité
+
+**SonarCloud** analyse le code source configuré dans le dépôt pour détecter **bugs**, **vulnérabilités**, **duplications**, **code smells** et suivre la **couverture de tests** lorsque les rapports (Clover, LCOV, JaCoCo, etc.) sont fournis par le pipeline.  
+Le fichier `sonar-project.properties` à la racine définit les chemins sources, tests et rapports de couverture.  
+L’analyse est déclenchée dans GitHub Actions avec le secret **`SONAR_TOKEN`** (pas de jeton en clair dans le dépôt).
+
+### GitHub Actions — CI/CD
+
+Le workflow **`.github/workflows/ci.yml`** :
+
+- se déclenche sur les pushes et pull requests vers **`main`** et **`dev`** ;  
+- installe les dépendances, exécute le **lint**, les **tests automatisés**, l’analyse **SonarCloud**, puis **construit** les images Docker taguées par le SHA Git ;  
+- sur **`main`** uniquement, pousse les images vers une **registry** en utilisant les secrets **`REGISTRY_USER`** et **`REGISTRY_TOKEN`**.
+
+### Docker — conteneurisation
+
+Chaque partie de la stack possède un **Dockerfile** ; **`docker-compose.yml`** orchestre les services, le réseau `skillhub_net`, les **healthchecks** et les **volumes** persistants (données MySQL et MongoDB). Cela garantit un environnement **reproductible** entre développeurs et intégration continue.
+
+---
+
+## 6. Variables d’environnement
+
+Le fichier **`.env.example`** à la **racine** du dépôt documente les variables pour :
+
+- **Laravel** (via `env_file: .env` du service `api`) ;  
+- **MySQL / MongoDB** (valeurs partagées avec les services `db` / `mongodb`) ;  
+- **Auth-server** (`JWT_*`, `APP_MASTER_KEY`, datasource Spring injectée ou surchargée par `docker-compose.yml`).
+
+**À faire localement** : copier `.env.example` vers `.env`, générer une **`APP_KEY`** Laravel (ex. `php artisan key:generate` dans le conteneur ou hors Docker), et définir des secrets forts pour **`JWT_SECRET`** (≥ 32 caractères), **`APP_MASTER_KEY`**, et les mots de passe bases de données.
+
+---
+
+## 7. Qualité logicielle — analyse et plan d’action
+
+L’analyse **SonarCloud** sur le dépôt (après intégration de la feature « limite d’inscriptions » sur `main`) permet de croiser **fiabilité**, **sécurité**, **maintenabilité**, **couverture** et **duplications**. Les sections suivantes ne modifient pas le code : elles proposent un **plan d’amélioration** aligné sur un constat précis remonté par l’outil.
+
+### 7.1 Constat — données non sûres écrites dans le stockage navigateur (Sonar `jssecurity:S8475`)
+
+Sonar signale une règle du type **« Ensure that tainted data is sanitized before being written to browser storage »** : tout ce qui est placé dans **`localStorage`**, **`sessionStorage`** ou **`IndexedDB`** reste disponible pour **tout le JavaScript du même origine**, et survit aux rechargements de page. Si l’on y enregistre des valeurs **issues de l’extérieur** (réponses API, paramètres d’URL, champs utilisateur) **sans les traiter**, on risque une **empoisonnement du stockage** (*storage poisoning*) : plus tard, un autre module — ou un développeur qui croit la donnée « interne » — la relit et l’utilise dans un **rendu DOM**, une **construction d’URL** ou un **appel API**, ce qui ouvre la voie à des abus **indirects** (XSS persistant côté client, corruption d’état à côté des jetons ou préférences, exploitation **cross-page** car le stockage est partagé entre toutes les pages du même site).
+
+### 7.2 Plan d’action proposé (priorisé, sans implémentation dans ce livrable)
+
+1. **Cartographier les écritures**  
+   Lister tous les chemins qui écrivent dans `localStorage`, `sessionStorage` ou `IndexedDB` (recherche dans le code, revue de PR). Pour chaque clé, noter **l’origine** de la valeur (API, formulaire, URL, constante).
+
+2. **Valider avant d’écrire (liste blanche)**  
+   Lorsque la donnée doit respecter un format connu (rôle, identifiant, booléen, énumération), la comparer à une **liste blanche** de valeurs attendues **avant** persistance. Ne pas se contenter d’une hygiène « à la lecture » : le code qui lit plus tard peut être ailleurs, ou ajouté plus tard, et supposer à tort que le stockage est sûr.
+
+3. **Assainir explicitement avant stockage**  
+   Pour les chaînes libres (noms affichés, libellés, etc.), appliquer une **sanitisation ou normalisation** au moment de l’écriture (échappement, suppression de balises, troncature contrôlée, format imposé), selon le contrat métier. Éviter de persister du **HTML brut**, des **URL non validées** ou des **objets complexes** provenant de sources non fiables sans schéma strict (JSON validé, types bornés).
+
+4. **Réduire ce qui est stocké**  
+   Préférer, quand c’est possible, de ne **pas** dupliquer dans le navigateur des données riches ou sensibles : garder un **identifiant** ou un **résumé** vérifiable côté serveur, plutôt qu’un miroir complet de réponses API « comme reçues ».
+
+5. **Documenter le contrat par clé**  
+   Pour chaque entrée de stockage, une courte **fiche** : type attendu, origine, lecteurs connus, garanties (ou absence de garantie). Cela limite les mauvaises suppositions futures.
+
+6. **Contrôles de non-régression**  
+   Après correction : revue de code ciblée, tests manuels ou automatisés sur les scénarios « écriture puis lecture dans un autre écran », et revérification SonarCloud sur la même règle **S8475**.
+
+Ce plan reste **générique** par rapport à la stack : il s’applique à tout code JavaScript exécuté dans le navigateur qui persiste des données. Les autres indicateurs Sonar (couverture, duplications, dette) pourront être suivis de la même manière : **constat → priorisation → actions mesurables**.
+
+---
+
+## 8. Structure du dépôt
+
+```text
+.
+├── .github/workflows/       # CI/CD (GitHub Actions)
+├── auth-server/             # Micro-service Spring Boot (JWT, HMAC login)
+├── backend/                 # API Laravel
+├── docker/                  # Scripts SQL d’init MySQL, etc.
+├── docker-compose.yml
+├── sonar-project.properties # Configuration SonarCloud
+├── .env.example             # Modèle des variables (Laravel + Spring + infra)
+└── README.md                # Ce document
+```
+
+---
+
+## Documentation complémentaire
+
+- Backend : `backend/README.md`  
+- OpenAPI : `backend/docs/openapi.yaml`  
